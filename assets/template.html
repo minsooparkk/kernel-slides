@@ -266,19 +266,30 @@ body.pen .inkhint,.inkhint.starthint{display:block} body.pen.idle .inkhint{displ
 body.editing .deck [contenteditable]:hover{outline:1px dashed var(--blue);outline-offset:3px}
 body.editing .ctl .ed{color:#fff;background:var(--blue)}
 
+/* 영상 촬영 모드(body data-video="on"): 아래 200px 는 자막·얼굴 캠 자리로 비운다 */
+body[data-video="on"] .slide{padding-top:44px;padding-bottom:200px}
+body[data-video="on"] .foot{display:none}
+body[data-video="on"] .row{padding:11px 0}
+.safeguide{position:absolute;inset:0;z-index:6;pointer-events:none;display:none}
+body.guide-on .safeguide{display:block}
+.safeguide .sub-band{position:absolute;left:0;right:0;bottom:0;height:120px;border-top:2px dashed #e5383b;background:rgba(229,56,59,.07)}
+.safeguide .cam{position:absolute;left:1031px;top:503px;width:182px;height:182px;border-radius:50%;border:2px dashed #e5383b;background:rgba(229,56,59,.10)}
+.safeguide span{position:absolute;font:700 13px Pretendard,sans-serif;color:#e5383b}
+.safeguide .sub-band span{left:80px;top:10px} .safeguide .cam span{left:50%;top:50%;transform:translate(-50%,-50%);white-space:nowrap}
+
 /* 인쇄·PDF: 한 장 = 한 쪽 */
 @media print{
   @page{size:1280px 720px;margin:0}
   html,body{height:auto;overflow:visible;background:none}
   .deck{position:static;transform:none;width:1280px;height:auto}
   .slide{position:relative;display:flex!important;width:1280px;height:720px;break-after:page;page-break-after:always}
-  .ctl,.notesbar,.ov,.ink,.laserdot,.inkhint,.keypanel{display:none!important}
+  .ctl,.notesbar,.ov,.ink,.laserdot,.inkhint,.keypanel,.safeguide{display:none!important}
   [data-step]{opacity:1!important;transform:none!important}
   *{animation:none!important}
 }
 </style>
 </head>
-<body data-label="{{강의 제목(푸터용 짧게)}}" >
+<body data-video="on" data-label="{{강의 제목(푸터용 짧게)}}" >
 <div class="deck">
 
 <!-- ================= 예시 장. 전부 지우고 설계한 장으로 채운다 ================= -->
@@ -500,7 +511,7 @@ keypanel.innerHTML='<p class="kt">단축키</p><dl>'+[
  ['→ · Space · Enter','다음 (단계 공개 먼저)'],['← · Backspace','이전'],['Home · End','처음 · 끝'],
  ['F · F5 · 더블클릭','전체화면'],['D','펜 켜기·끄기'],['1 ~ 5','펜 색: 빨강·파랑·초록·네이비·형광펜'],
  ['Z · Ctrl+Z','펜 되돌리기'],['C','이 장 그림 지우기'],['L','레이저 포인터'],['N','발표 노트'],['G','전체 보기'],
- ['E','편집(글자 고치기) · Esc 로 끝'],['Ctrl+S','고친 상태를 새 파일로 저장'],['? · H','이 표 열기·닫기'],['Esc','펜·레이저·표·편집 닫기']
+ ['E','편집(글자 고치기) · Esc 로 끝'],['Ctrl+S','고친 상태를 새 파일로 저장'],['V','자막·얼굴 캠 자리 안내선'],['? · H','이 표 열기·닫기'],['Esc','펜·레이저·표·편집 닫기']
 ].map(([k,v])=>`<dt>${k.split(' · ').map(x=>`<kbd>${x}</kbd>`).join(' ')}</dt><dd>${v}</dd>`).join('')+'</dl>';
 const ov=rt(document.createElement('div'));ov.className='ov';
 body.append(ctl,notesbar,ov,keypanel);
@@ -508,6 +519,7 @@ body.append(ctl,notesbar,ov,keypanel);
 /* ---------- 펜: 장마다 따로 그린다. 저장·인쇄에는 남지 않는다 ---------- */
 const PENS=[{c:'#e5383b',w:4,a:1,n:'빨강'},{c:'#2f6fb0',w:4,a:1,n:'파랑'},{c:'#3f7350',w:4,a:1,n:'초록'},{c:'#16264a',w:4,a:1,n:'네이비'},{c:'#ffd43b',w:22,a:.42,n:'형광펜'}];
 let pen=PENS[0];
+const guide=rt(document.createElement('div'));guide.className='safeguide';guide.innerHTML='<div class="sub-band"><span>자막 자리</span></div><div class="cam"><span>얼굴 캠</span></div>';deck.append(guide);
 const ink=rt(document.createElement('canvas'));ink.className='ink';
 const DPR=Math.max(2,window.devicePixelRatio||1);ink.width=W*DPR;ink.height=H*DPR;deck.append(ink);
 const ictx=ink.getContext('2d');ictx.scale(DPR,DPR);ictx.lineCap='round';ictx.lineJoin='round';
@@ -597,6 +609,7 @@ addEventListener('keydown',e=>{
   }
   if(c==='KeyD'){togglePen(true);return}
   if(c==='KeyL'){toggleLaser();return}
+  if(c==='KeyV'){body.classList.toggle('guide-on');return}
   if(k==='Escape'&&body.classList.contains('laser-on')){toggleLaser(false);return}
   if(['ArrowRight','ArrowDown','PageDown','Enter'].includes(k)||c==='Space'){e.preventDefault();next()}
   else if(['ArrowLeft','ArrowUp','PageUp','Backspace'].includes(k)){e.preventDefault();prev()}
@@ -622,7 +635,8 @@ function lines(el){
 const snip=e=>(e.textContent||'').replace(/\s+/g,' ').trim().slice(0,28);
 function audit(s,i){
   const R=s.getBoundingClientRect(),iss=[],add=(sev,type,msg)=>iss.push({sev,type,msg});
-  const floor=R.bottom-(s.querySelector('.foot')?54:30);
+  const pb=parseFloat(getComputedStyle(s).paddingBottom)||72, floor=R.bottom-Math.max(pb-18,30);
+  const video=body.dataset.video==='on', cam={l:R.left+1011,t:R.top+483,r:R.left+1233,b:R.top+705};
   const els=[...s.querySelectorAll('*')].filter(e=>!e.closest('.foot,.notes'));
   const seen=new Set();
   for(const e of els){
@@ -630,6 +644,8 @@ function audit(s,i){
     const leaf=[...e.childNodes].some(c=>c.nodeType===3&&c.textContent.trim())||['IMG','SVG','svg'].includes(e.tagName);
     if(!leaf)continue;
     if(r.bottom>floor+1){const k='v'+snip(e);if(!seen.has(k)){seen.add(k);add('error','넘침',`아래로 ${Math.round(r.bottom-floor)}px 넘침: "${snip(e)}"`)}}
+    if(video){const rg=document.createRange();let hit=false;[...e.childNodes].filter(c=>c.nodeType===3&&c.textContent.trim()).forEach(c=>{rg.selectNodeContents(c);[...rg.getClientRects()].forEach(q=>{if(q.right>cam.l&&q.bottom>cam.t&&q.left<cam.r&&q.top<cam.b)hit=true})});
+      if(hit){const k='c'+snip(e);if(!seen.has(k)){seen.add(k);add('warn','얼굴 캠 영역',`오른쪽 아래 캠 자리에 글자가 걸침: "${snip(e)}"`)}}}
     if(r.right>R.right-40+1){const k='h'+snip(e);if(!seen.has(k)){seen.add(k);add('error','가로 넘침',`오른쪽으로 ${Math.round(r.right-(R.right-40))}px: "${snip(e)}"`)}}
   }
   s.querySelectorAll('.eyebrow,.badge,.k,.tag,.n,.part,.btn,.fix b,th,.fact .v,.meta>div').forEach(e=>{if(lines(e).length>1)add('error','라벨 두 줄',`한 줄이어야 할 라벨이 두 줄: "${snip(e)}"`)});
