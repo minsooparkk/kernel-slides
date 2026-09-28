@@ -52,6 +52,8 @@ python scripts/check.py 강의안.html --pdf 강의안.pdf   # 한 장 = 한 쪽
 
 한/영이 한글이어도 단축키가 먹는다. 오른쪽 아래 조작 막대는 마우스를 멈추면 숨는다.
 
+유튜브 녹화용(화면 아래 자막 띠·오른쪽 아래 얼굴 캠 자리를 비우는 배치)은 [youtube-lecture-slides](https://github.com/minsooparkk/youtube-lecture-slides). 이 스킬에서도 `body` 에 `data-video="on"` 을 붙이면 같은 배치가 켜진다.
+
 ## 라이선스
 
 [MIT](LICENSE)

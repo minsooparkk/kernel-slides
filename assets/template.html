@@ -17,6 +17,8 @@
   --red:#9b3048; --redsoft:#f3d0d8;
   --backdrop:#0d1628;
   --r:16px;
+  /* 영상 촬영 모드: 비울 아래 높이, 자막 띠 높이, 얼굴 캠 원의 왼쪽·위·지름(1280×720 기준) */
+  --safe-b:200px; --sub-h:120px; --cam-l:1031px; --cam-t:503px; --cam-d:182px;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%}
@@ -267,13 +269,13 @@ body.editing .deck [contenteditable]:hover{outline:1px dashed var(--blue);outlin
 body.editing .ctl .ed{color:#fff;background:var(--blue)}
 
 /* 영상 촬영 모드(body data-video="on"): 아래 200px 는 자막·얼굴 캠 자리로 비운다 */
-body[data-video="on"] .slide{padding-top:44px;padding-bottom:200px}
+body[data-video="on"] .slide{padding-top:44px;padding-bottom:var(--safe-b)}
 body[data-video="on"] .foot{display:none}
 body[data-video="on"] .row{padding:11px 0}
 .safeguide{position:absolute;inset:0;z-index:6;pointer-events:none;display:none}
 body.guide-on .safeguide{display:block}
-.safeguide .sub-band{position:absolute;left:0;right:0;bottom:0;height:120px;border-top:2px dashed #e5383b;background:rgba(229,56,59,.07)}
-.safeguide .cam{position:absolute;left:1031px;top:503px;width:182px;height:182px;border-radius:50%;border:2px dashed #e5383b;background:rgba(229,56,59,.10)}
+.safeguide .sub-band{position:absolute;left:0;right:0;bottom:0;height:var(--sub-h);border-top:2px dashed #e5383b;background:rgba(229,56,59,.07)}
+.safeguide .cam{position:absolute;left:var(--cam-l);top:var(--cam-t);width:var(--cam-d);height:var(--cam-d);border-radius:50%;border:2px dashed #e5383b;background:rgba(229,56,59,.10)}
 .safeguide span{position:absolute;font:700 13px Pretendard,sans-serif;color:#e5383b}
 .safeguide .sub-band span{left:80px;top:10px} .safeguide .cam span{left:50%;top:50%;transform:translate(-50%,-50%);white-space:nowrap}
 
@@ -289,7 +291,7 @@ body.guide-on .safeguide{display:block}
 }
 </style>
 </head>
-<body data-video="on" data-label="{{강의 제목(푸터용 짧게)}}" >
+<body data-label="{{강의 제목(푸터용 짧게)}}" >
 <div class="deck">
 
 <!-- ================= 예시 장. 전부 지우고 설계한 장으로 채운다 ================= -->
@@ -636,7 +638,8 @@ const snip=e=>(e.textContent||'').replace(/\s+/g,' ').trim().slice(0,28);
 function audit(s,i){
   const R=s.getBoundingClientRect(),iss=[],add=(sev,type,msg)=>iss.push({sev,type,msg});
   const pb=parseFloat(getComputedStyle(s).paddingBottom)||72, floor=R.bottom-Math.max(pb-18,30);
-  const video=body.dataset.video==='on', cam={l:R.left+1011,t:R.top+483,r:R.left+1233,b:R.top+705};
+  const rs=getComputedStyle(document.documentElement),cv=n=>parseFloat(rs.getPropertyValue(n))||0,cl=cv('--cam-l'),ct=cv('--cam-t'),cd=cv('--cam-d');
+  const video=body.dataset.video==='on', cam={l:R.left+cl-20,t:R.top+ct-20,r:R.left+cl+cd+20,b:R.top+ct+cd+20};
   const els=[...s.querySelectorAll('*')].filter(e=>!e.closest('.foot,.notes'));
   const seen=new Set();
   for(const e of els){
